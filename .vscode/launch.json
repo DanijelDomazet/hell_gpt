@@ -8,14 +8,17 @@
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "sgpt/app.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             //"args": ["--chat", "dev2", "--token_limit", "1500", "What are the folders in my home folder"]
-            "args": ["--chat", "dev2", "What are the folders in my root tmp folder?"]
+            "args": [
+                "--chat",
+                "dev2",
+                "What are the folders in my tmp folder?"
+            ]
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]
             //"args": ["--install-functions"]
-
         }
     ]
 }
