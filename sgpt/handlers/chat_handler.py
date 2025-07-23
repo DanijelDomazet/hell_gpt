@@ -172,28 +172,6 @@ class ChatHandler(Handler):
         chat_history = self.chat_session.get_messages(chat_id)
         return chat_history[0] if chat_history else ""
 
-    @option_callback
-    def list_ids(self, value: str) -> None:
-        # Prints all existing chat IDs to the console.
-        for chat_id in self.chat_session.list():
-            typer.echo(chat_id)
-
-    def show_messages(self, chat_id: str, markdown: bool) -> None:
-        color = cfg.get("DEFAULT_COLOR")
-        if "APPLY MARKDOWN" in self.initial_message(chat_id):
-            theme = cfg.get("CODE_THEME")
-            for message in self.chat_session.get_messages(chat_id) and markdown:
-                if message.startswith("assistant:"):
-                    Console().print(Markdown(message, code_theme=theme))
-                else:
-                    typer.secho(message, fg=color)
-                typer.echo()
-            return
-
-        for index, message in enumerate(self.chat_session.get_messages(chat_id)):
-            running_color = color if index % 2 == 0 else "green"
-            typer.secho(message, fg=running_color)
-
     def validate(self) -> None:
         if self.initiated:
             chat_role_name = self.role.get_role_name(self.initial_message(self.chat_id))
@@ -223,3 +201,58 @@ class ChatHandler(Handler):
 
     def handle(self, **kwargs: Any) -> str:  # type: ignore[override]
         return super().handle(**kwargs, chat_id=self.chat_id)
+
+
+class ChatHistory:
+    """
+    Lightweight utilities for listing chats and showing their content.
+    Fully static – no instance of ChatHandler required.
+    """
+
+    _session = ChatSession(
+        CHAT_CACHE_LENGTH,
+        CHAT_CACHE_PATH,
+        token_limit=1000,  # irrelevant here
+    )
+
+    @classmethod
+    def list_ids(cls, _value: str) -> None:
+        for chat_id in cls._session.list():
+            typer.echo(chat_id)
+
+    @classmethod
+    def show_messages(
+        cls,
+        chat_id: str,
+        markdown: bool,
+        qa_pairs: int | None = None,
+    ) -> None:
+        color = cfg.get("DEFAULT_COLOR")
+        theme = cfg.get("CODE_THEME")
+        msgs = cls._session.get_messages(chat_id)
+
+        # keep only user/assistant messages
+        msgs = [m for m in msgs if m.startswith(("user:", "assistant:"))]
+
+        total_pairs = len(msgs) // 2  # whole-chat count
+
+        # optional trim to last N pairs
+        if qa_pairs is not None:
+            msgs = msgs[-qa_pairs * 2 :]
+
+        pairs = [(msgs[i], msgs[i + 1]) for i in range(0, len(msgs), 2)]
+
+        # global number of the first (oldest) pair in the slice
+        start_no = total_pairs - len(pairs) + 1
+
+        for idx, (user_msg, asst_msg) in enumerate(pairs):
+            pair_no = start_no + idx  # 12, 13, 14 …
+            typer.echo(f"\n────────── [ {pair_no} ] ──────────")
+            typer.secho(user_msg, fg=color)
+
+            if markdown:
+                Console().print(Markdown(asst_msg, code_theme=theme))
+            else:
+                typer.secho(asst_msg, fg="green")
+
+        typer.echo()  # final newline

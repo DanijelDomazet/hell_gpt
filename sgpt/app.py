@@ -10,7 +10,7 @@ from click.types import Choice
 
 from sgpt.config import cfg
 from sgpt.function import get_openai_schemas
-from sgpt.handlers.chat_handler import ChatHandler
+from sgpt.handlers.chat_handler import ChatHandler, ChatHistory
 from sgpt.handlers.default_handler import DefaultHandler
 from sgpt.handlers.repl_handler import ReplHandler
 from sgpt.llm_functions.init_functions import install_functions as inst_funcs
@@ -116,13 +116,16 @@ def main(
         help="Show all messages from provided chat id.",
         rich_help_panel="Chat Options",
     ),
+    qa: int | None = typer.Option(
+        None, "--qa", help="Show the last N question–answer pairs (None = show all)."
+    ),
     list_chats: bool = typer.Option(
         False,
         "--list-chats",
         "-lc",
         help="List all existing chat ids.",
-        callback=ChatHandler.list_ids,
         rich_help_panel="Chat Options",
+        is_flag=True,
     ),
     role: str = typer.Option(
         None,
@@ -189,8 +192,13 @@ def main(
             # Non-interactive shell.
             pass
 
+    if list_chats:
+        ChatHistory.list_ids()
+        raise typer.Exit()
+
     if show_chat:
-        ChatHandler.show_messages(show_chat, md)
+        ChatHistory.show_messages(show_chat, md, qa_pairs=qa)
+        raise typer.Exit()
 
     if sum((shell, describe_shell, code)) > 1:
         raise BadArgumentUsage(
