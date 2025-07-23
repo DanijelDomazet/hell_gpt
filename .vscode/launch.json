@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File",
+            "name": "app.py default model",
             "type": "debugpy",
             "request": "launch",
             "program": "sgpt/app.py",
@@ -15,6 +15,26 @@
             "args": [
                 "--chat",
                 "dev2",
+                "What are the folders in my tmp folder?"
+            ]
+            //"args": ["--chat", "dev2", "What are the planets in solar system?"]
+            //"args": ["--install-functions"]
+        },
+        {
+            "name": "app.py O3 model",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "sgpt/app.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            //"args": ["--chat", "dev2", "--token_limit", "1500", "What are the folders in my home folder"]
+            "args": [
+                "--chat",
+                "devo3",
+                "--model",
+                "o3",
+                "--temperature",
+                "1",
                 "What are the folders in my tmp folder?"
             ]
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]

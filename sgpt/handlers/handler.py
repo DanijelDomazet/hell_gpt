@@ -80,7 +80,11 @@ class Handler:
         result = get_function(name)(**dict_args)
         if cfg.get("SHOW_FUNCTIONS_OUTPUT") == "true":
             yield f"```text\n{result}\n```\n"
-        messages.append({"role": "function", "content": result, "name": name})
+
+        # messages.append({"role": "function", "content": result, "name": name})
+        messages.append({"role": "developer", "content": result, "name": name})
+        # Danijel: replaced to make O3 work with function calls. TODO fix properly.
+        # https://github.com/TheR1D/shell_gpt/issues/717
 
     @cache
     def get_completion(
@@ -101,7 +105,8 @@ class Handler:
         if functions:
             additional_kwargs["tool_choice"] = "auto"
             additional_kwargs["tools"] = functions
-            additional_kwargs["parallel_tool_calls"] = False
+            # Danijel: not supported by new o3 model, so comment out
+            # additional_kwargs["parallel_tool_calls"] = False
 
         response = completion(
             model=model,
