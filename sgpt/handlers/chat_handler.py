@@ -216,7 +216,7 @@ class ChatHistory:
     )
 
     @classmethod
-    def list_ids(cls, _value: str) -> None:
+    def list_ids(cls) -> None:
         for chat_id in cls._session.list():
             typer.echo(chat_id)
 
