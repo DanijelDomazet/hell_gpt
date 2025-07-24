@@ -49,9 +49,9 @@
             "justMyCode": true,
             "args": [
                 "--show-chat",
-                "rnd_o3",
+                "nrm_o3",
                 "--qa",
-                "4"
+                "20"
             ]
         },
     ]

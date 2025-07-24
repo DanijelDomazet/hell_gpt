@@ -98,9 +98,7 @@ class ChatSession:
         if not file_path.exists():
             return 0
         parsed_cache = json.loads(file_path.read_text())
-        messages = [
-            message["content"] for message in parsed_cache if "content" in message
-        ]
+        messages = [message["content"] for message in parsed_cache if "content" in message]
         text_to_encode = " ".join(messages)
 
         # tokenizer = tiktoken.encoding_for_model("gpt-4o")
@@ -110,11 +108,7 @@ class ChatSession:
         # Log the details to a file
         if DEBUGING:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            log_message = (
-                f"{current_time}: "
-                f"tokens {token_count} "
-                f"messages {len(messages)}\n"
-            )
+            log_message = f"{current_time}: " f"tokens {token_count} " f"messages {len(messages)}\n"
 
             log_file_path = self.storage_path / f"{chat_id}_log.txt"
             with open(log_file_path, "a") as log_file:
@@ -142,9 +136,7 @@ class ChatSession:
 
 class ChatHandler(Handler):
 
-    def __init__(
-        self, chat_id: str, role: SystemRole, markdown: bool, token_limit: int
-    ) -> None:
+    def __init__(self, chat_id: str, role: SystemRole, markdown: bool, token_limit: int) -> None:
         super().__init__(role, markdown)
         self.chat_id = chat_id
         self.role = role
@@ -176,9 +168,7 @@ class ChatHandler(Handler):
         if self.initiated:
             chat_role_name = self.role.get_role_name(self.initial_message(self.chat_id))
             if not chat_role_name:
-                raise BadArgumentUsage(
-                    f'Could not determine chat role of "{self.chat_id}"'
-                )
+                raise BadArgumentUsage(f'Could not determine chat role of "{self.chat_id}"')
             if self.role.name == DefaultRoles.DEFAULT.value:
                 # If user didn't pass chat mode, we will use the one that was used to initiate the chat.
                 self.role = SystemRole.get(chat_role_name)
@@ -227,32 +217,59 @@ class ChatHistory:
         markdown: bool,
         qa_pairs: int | None = None,
     ) -> None:
+        """
+        Show the chat history grouped as **Question / Answer-block**.
+
+        • Every line that starts with ``user:`` is a *question*.
+        • All subsequent lines (assistant / developer / …) until the next
+        ``user:`` belong to the *answer* of that question.
+        """
+
         color = cfg.get("DEFAULT_COLOR")
         theme = cfg.get("CODE_THEME")
-        msgs = cls._session.get_messages(chat_id)
+        msgs: list[str] = cls._session.get_messages(chat_id)
 
-        # keep only user/assistant messages
-        msgs = [m for m in msgs if m.startswith(("user:", "assistant:"))]
+        # ── build Question → Answer list ──────────────────────────
+        groups: list[tuple[str, list[str]]] = []  # [(question, [answer lines]), …]
+        current_q: str | None = None
+        current_ans: list[str] = []
 
-        total_pairs = len(msgs) // 2  # whole-chat count
+        for m in msgs:
+            if m.startswith("user:"):
+                # flush previous group
+                if current_q is not None:
+                    groups.append((current_q, current_ans))
+                # start new group
+                current_q = m
+                current_ans = []
+            else:
+                # append to current answer block
+                if current_q is not None:  # ignore stray system lines before first user
+                    current_ans.append(m)
 
-        # optional trim to last N pairs
+        # add last Q/A pair, if any
+        if current_q is not None:
+            groups.append((current_q, current_ans))
+
+        total_questions = len(groups)
+
+        # optional trimming to last N questions
         if qa_pairs is not None:
-            msgs = msgs[-qa_pairs * 2 :]
+            groups = groups[-qa_pairs:]
 
-        pairs = [(msgs[i], msgs[i + 1]) for i in range(0, len(msgs), 2)]
+        start_no = total_questions - len(groups) + 1
 
-        # global number of the first (oldest) pair in the slice
-        start_no = total_pairs - len(pairs) + 1
+        # ── pretty-print ──────────────────────────────────────────
+        for idx, (question, answer_lines) in enumerate(groups):
+            q_no = start_no + idx
+            typer.echo(f"\n────────── [ {q_no} ] ──────────")
+            typer.secho(question, fg=color)
 
-        for idx, (user_msg, asst_msg) in enumerate(pairs):
-            pair_no = start_no + idx  # 12, 13, 14 …
-            typer.echo(f"\n────────── [ {pair_no} ] ──────────")
-            typer.secho(user_msg, fg=color)
+            answer_text = "\n".join(answer_lines) or "<no answer yet>"
 
             if markdown:
-                Console().print(Markdown(asst_msg, code_theme=theme))
+                Console().print(Markdown(answer_text, code_theme=theme))
             else:
-                typer.secho(asst_msg, fg="green")
+                typer.secho(answer_text, fg="green")
 
         typer.echo()  # final newline
