@@ -15,7 +15,10 @@
             "args": [
                 "--chat",
                 "dev2",
-                "What are the folders in my tmp folder?"
+                "--token_limit",
+                "1000",
+                //"What are the folders in my tmp folder?"
+                "Whats 4+3?"
             ]
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]
             //"args": ["--install-functions"]
