@@ -98,17 +98,32 @@ class ChatSession:
         if not file_path.exists():
             return 0
         parsed_cache = json.loads(file_path.read_text())
-        messages = [message["content"] for message in parsed_cache if "content" in message]
+        messages = [
+            message["content"] for message in parsed_cache if "content" in message
+        ]
         text_to_encode = " ".join(messages)
 
-        # tokenizer = tiktoken.encoding_for_model("gpt-4o")
+        # tokenizer = tiktoken.encoding_for_model("gpt-5")
         tokenizer = tiktoken.get_encoding("o200k_base")
+        # tokenizer = tiktoken.get_encoding("gpt-5")
+
         token_count = len(tokenizer.encode(text_to_encode))
 
         # Log the details to a file
         if DEBUGING:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            log_message = f"{current_time}: " f"tokens {token_count} " f"messages {len(messages)}\n"
+            questions_cnt = sum(1 for m in parsed_cache if m.get("role") == "user")
+            assistant_cnt = sum(1 for m in parsed_cache if m.get("role") == "assistant")
+            developer_cnt = sum(1 for m in parsed_cache if m.get("role") == "developer")
+            log_message = (
+                f"{current_time}: "
+                f"tokens {token_count} "
+                f"questions {questions_cnt} "
+                f"answers {assistant_cnt} "
+                f"tools {developer_cnt} "
+                f"total {len(messages)} "
+                "\n"
+            )
 
             log_file_path = self.storage_path / f"{chat_id}_log.txt"
             with open(log_file_path, "a") as log_file:
@@ -136,7 +151,9 @@ class ChatSession:
 
 class ChatHandler(Handler):
 
-    def __init__(self, chat_id: str, role: SystemRole, markdown: bool, token_limit: int) -> None:
+    def __init__(
+        self, chat_id: str, role: SystemRole, markdown: bool, token_limit: int
+    ) -> None:
         super().__init__(role, markdown)
         self.chat_id = chat_id
         self.role = role
@@ -168,7 +185,9 @@ class ChatHandler(Handler):
         if self.initiated:
             chat_role_name = self.role.get_role_name(self.initial_message(self.chat_id))
             if not chat_role_name:
-                raise BadArgumentUsage(f'Could not determine chat role of "{self.chat_id}"')
+                raise BadArgumentUsage(
+                    f'Could not determine chat role of "{self.chat_id}"'
+                )
             if self.role.name == DefaultRoles.DEFAULT.value:
                 # If user didn't pass chat mode, we will use the one that was used to initiate the chat.
                 self.role = SystemRole.get(chat_role_name)
