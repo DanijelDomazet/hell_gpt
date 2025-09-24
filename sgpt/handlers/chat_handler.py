@@ -118,7 +118,7 @@ class ChatSession:
             log_message = (
                 f"{current_time}: "
                 f"tokens {token_count} "
-                f"questions {questions_cnt} "
+                f"questions {questions_cnt} | "
                 f"answers {assistant_cnt} "
                 f"tools {developer_cnt} "
                 f"total {len(messages)} "
