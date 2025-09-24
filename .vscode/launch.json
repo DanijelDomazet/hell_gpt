@@ -57,5 +57,20 @@
                 "20"
             ]
         },
+        {
+            "name": "app.py yo",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "sgpt/app.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--chat",
+                "nrm_o3",
+                "--token_limit",
+                "10000",
+                "Whats 4+3?"
+            ]
+        },
     ]
 }
