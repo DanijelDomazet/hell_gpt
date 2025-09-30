@@ -29,7 +29,7 @@ DEFAULT_CONFIG = {
     "ROLE_STORAGE_PATH": os.getenv("ROLE_STORAGE_PATH", str(ROLE_STORAGE_PATH)),
     "DEFAULT_EXECUTE_SHELL_CMD": os.getenv("DEFAULT_EXECUTE_SHELL_CMD", "false"),
     "DISABLE_STREAMING": os.getenv("DISABLE_STREAMING", "false"),
-    "CODE_THEME": os.getenv("CODE_THEME", "dracula"),
+    "CODE_THEME": os.getenv("CODE_THEME", "github-dark"),
     "OPENAI_FUNCTIONS_PATH": os.getenv("OPENAI_FUNCTIONS_PATH", str(FUNCTIONS_PATH)),
     "OPENAI_USE_FUNCTIONS": os.getenv("OPENAI_USE_FUNCTIONS", "true"),
     "SHOW_FUNCTIONS_OUTPUT": os.getenv("SHOW_FUNCTIONS_OUTPUT", "false"),
