@@ -32,13 +32,15 @@
             "justMyCode": true,
             //"args": ["--chat", "dev2", "--token_limit", "1500", "What are the folders in my home folder"]
             "args": [
+                "--no-md",
                 "--chat",
                 "devo3",
                 "--model",
                 "o3",
                 "--temperature",
                 "1",
-                "What are the folders in my tmp folder?"
+                //"What are the folders in my tmp folder?"
+                "Print me few lines of python code to open some file, write xxx to it, and close it?"
             ]
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]
             //"args": ["--install-functions"]
