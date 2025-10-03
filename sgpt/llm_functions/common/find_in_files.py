@@ -20,6 +20,11 @@ class Function(OpenAISchema):
         description="Directories to skip (passed to grep as --exclude-dir). "
         "Accepts absolute paths or globs, e.g. ['.git','node_modules']",
     )
+    file_extensions: list[str] | None = Field(
+        default=None,
+        description="Only search files whose names match these extensions "
+        "(e.g. ['py','proto']). Uses grep --include.",
+    )
 
     class Config:
         title = "find_in_files"
@@ -32,6 +37,7 @@ class Function(OpenAISchema):
         directory: str = ".",
         max_hits: int | None = None,
         exclude_dirs: list[str] | None = None,
+        file_extensions: list[str] | None = None,
     ) -> str:
         directory = os.path.expandvars(os.path.expanduser(directory))
 
@@ -41,6 +47,12 @@ class Function(OpenAISchema):
         if exclude_dirs:
             for d in exclude_dirs:
                 base_cmd.append(f"--exclude-dir={d}")
+
+        # include only selected extensions
+        if file_extensions:
+            for ext in file_extensions:
+                ext = ext.lstrip("*.")  # clean up
+                base_cmd.append(f"--include=*.{ext}")
 
         # add pattern + target dir
         base_cmd.extend([pattern, directory])
