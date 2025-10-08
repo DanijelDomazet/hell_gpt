@@ -12,7 +12,7 @@ class Function(OpenAISchema):
     shell_command: str = Field(
         ...,
         example="ls -la",
-        descriptions="Linux Bash shell command to execute.",
+        descriptions="Ubuntu bash shell command to execute.",
     )
 
     class Config:

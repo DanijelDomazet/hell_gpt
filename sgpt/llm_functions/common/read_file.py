@@ -12,11 +12,8 @@ SAFE_ROOT = pathlib.Path("/home/dd").resolve()
 
 
 class Function(OpenAISchema):
-    """Reads text from a file and returns it as UTF-8.
-
-    Parameters `start` and `end` are **1-based line numbers**:
-      • `start` is inclusive (defaults to 1 – the first line)
-      • `end`   is inclusive as well; pass `None` to read to EOF.
+    """
+    Reads text from a file.
     """
 
     file_path: str = Field(..., description="Absolute or ~/relative path to the file")
