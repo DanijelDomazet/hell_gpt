@@ -1,4 +1,4 @@
-import pathlib
+import pathlib, os, itertools
 from typing import Optional
 
 from instructor import OpenAISchema
@@ -48,29 +48,41 @@ class Function(OpenAISchema):
     ) -> str:
         """Return text from *start* to *end* lines (inclusive)."""
 
-        # Resolve path and enforce jail
-        p = pathlib.Path(file_path).expanduser().resolve()
-        if SAFE_ROOT not in p.parents and p != SAFE_ROOT:
-            raise ValueError(f"Access to {p} is outside the permitted root {SAFE_ROOT}")
+        try:
+            # Resolve path and enforce jail
+            p = pathlib.Path(file_path).expanduser().resolve()
+            if SAFE_ROOT not in p.parents and p != SAFE_ROOT:
+                return (
+                    f"Error: '{file_path}' is outside the permitted root "
+                    f"({SAFE_ROOT})."
+                )
 
-        # Read with best-effort UTF-8 decoding
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
+            if not p.exists():
+                return f"Error: file '{file_path}' does not exist."
+            if not p.is_file():
+                return f"Error: path '{file_path}' is not a regular file."
 
-        # Convert 1-based → Python slice indexes
-        start_idx = max(start - 1, 0)
-        end_idx = (
-            end if end is not None else None
-        )  # NOTE: inclusive in API → exclusive in slice
+            # Read with best-effort UTF-8 decoding
+            with p.open("r", encoding="utf-8", errors="replace") as fh:
+                lines = fh.readlines()
 
-        slice_lines = lines[start_idx:end_idx]
-        text = "".join(slice_lines)
+            # Convert 1-based → Python slice indexes
+            start_idx = max(start - 1, 0)
+            end_idx = (
+                end if end is not None else None
+            )  # NOTE: inclusive in API → exclusive in slice
 
-        # Cap very long output
-        if len(text) > _max_chars:
-            text = (
-                text[:_max_chars]
-                + f"\n...[truncated; total {len(text)} chars in slice]..."
-            )
+            slice_lines = lines[start_idx:end_idx]
+            text = "".join(slice_lines)
 
-        return text
+            # Cap very long output
+            if len(text) > _max_chars:
+                text = (
+                    text[:_max_chars]
+                    + f"\n...[truncated; total {len(text)} chars in slice]..."
+                )
+
+            return text or "(file empty in requested range)"
+
+        except Exception as e:
+            return f"Error reading '{file_path}': {e}"
