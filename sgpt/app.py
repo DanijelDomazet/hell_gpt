@@ -7,6 +7,7 @@ import sys
 import typer
 from click import BadArgumentUsage
 from click.types import Choice
+from rich.console import Console
 
 from sgpt.config import cfg
 from sgpt.function import get_openai_schemas
@@ -167,6 +168,8 @@ def main(
 ) -> None:
     stdin_passed = not sys.stdin.isatty()
 
+    console = Console()
+
     if stdin_passed:
         stdin = ""
         # TODO: This is very hacky.
@@ -213,6 +216,13 @@ def main(
 
     if editor:
         prompt = get_edited_prompt()
+        # Show the prompt that was just written in $EDITOR
+        console.print(prompt.rstrip())  # prompt line
+        # Show separator
+        console.rule(style="dim")  # separator
+    elif prompt.strip():  # typed on CLI / stdin
+        # Show separator
+        console.rule(style="dim")
 
     role_class = (
         DefaultRoles.check_get(shell, describe_shell, code)
