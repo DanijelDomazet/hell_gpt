@@ -1,3 +1,24 @@
+# HellGPT 
+
+## What's different from Shell GPT?
+
+### --token-limit option instead of CHAT_CACHE_LENGTH
+Added the `--token-limit` which defines how many tokens are kept in history. Defaults to 2000. 
+This enables user to have some chats with desired history sizes.
+`CHAT_CACHE_LENGTH` environment variable is not used any more. 
+
+### O3 model
+Supports O3 model.
+
+### --qa option
+Added the option to list last N question-answer pairs (history).
+
+### Functions
+- Added a function to read file.
+- Added a function to request a web page in txt mode.
+- Added a function to search through files.
+
+
 # ShellGPT
 A command-line productivity tool powered by AI large language models (LLM). This command-line tool offers streamlined generation of **shell commands, code snippets, documentation**, eliminating the need for external resources (like Google search). Supports Linux, macOS, Windows and compatible with all major Shells like PowerShell, CMD, Bash, Zsh, etc.
 
