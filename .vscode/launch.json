@@ -74,5 +74,30 @@
                 "Whats 4+3?"
             ]
         },
+        {
+            "name": "app.py 5.2 model",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "sgpt/app.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--chat",
+                "yo__gpt-5.2",
+                "--model",
+                "gpt-5.2",
+                "--temperature",
+                "1",
+                "--role",
+                "Yo",
+                "--no-cache",
+                "--token_limit",
+                "10000",
+                //"What are the folders in my tmp folder?"
+                "does that help you tell me how to see if I am running encrypted version?"
+            ]
+            //"args": ["--chat", "dev2", "What are the planets in solar system?"]
+            //"args": ["--install-functions"]
+        },
     ]
 }
