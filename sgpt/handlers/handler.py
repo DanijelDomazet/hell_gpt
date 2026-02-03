@@ -129,6 +129,8 @@ class Handler:
                     for tool_call in tool_calls:
                         if tool_call.function.name:
                             name = tool_call.function.name
+                            # Clear arguments if we have a new tool
+                            arguments = ""
                         if tool_call.function.arguments:
                             arguments += tool_call.function.arguments
                 if chunk.choices[0].finish_reason == "tool_calls":
