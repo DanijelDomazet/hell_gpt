@@ -18,17 +18,7 @@ import ssl
 import urllib.request
 from typing import Optional
 
-# ---------------------------------------------------------------------------
-# third-party dependency (mandatory)
-# ---------------------------------------------------------------------------
-try:
-    from bs4 import BeautifulSoup  # type: ignore
-except ModuleNotFoundError as exc:  # pragma: no cover
-    raise ImportError(
-        "`beautifulsoup4` is required for `read_web_page`. Install with:\n"
-        "    pip install beautifulsoup4\n"
-    ) from exc
-
+from bs4 import BeautifulSoup
 from instructor import OpenAISchema
 from pydantic import Field, HttpUrl
 

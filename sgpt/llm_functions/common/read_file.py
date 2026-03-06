@@ -1,4 +1,4 @@
-import pathlib, os, itertools
+import pathlib
 from typing import Optional
 
 from instructor import OpenAISchema
@@ -8,7 +8,7 @@ from pydantic import Field
 # Configuration
 # ----------------------------------------------------------------------------
 
-SAFE_ROOT = pathlib.Path("/home/dd").resolve()
+SAFE_ROOT = pathlib.Path("/").resolve()
 
 
 class Function(OpenAISchema):

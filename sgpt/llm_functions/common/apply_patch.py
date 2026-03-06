@@ -469,7 +469,7 @@ def process_patch(
     patch, fuzz = text_to_patch(text, orig)
     commit = patch_to_commit(patch, orig)
     apply_commit(commit, write_fn, remove_fn)
-    return "Done!"
+    return "Patch successfull."
 
 
 def open_file(path: str) -> str:
