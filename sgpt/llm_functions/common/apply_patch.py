@@ -499,7 +499,7 @@ class Function(OpenAISchema):
 
     patch_text: str = Field(
         ...,
-        description="Full text of the patch starting with '*** Begin Patch'. The patch contents must be separated by the new lines.",
+        description="Full text of the patch starting with '*** Begin Patch'. The patch contents must be separated by the new lines. Provide absolute paths if possible.",
     )
 
     class Config:
