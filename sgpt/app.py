@@ -220,10 +220,13 @@ def main(
         # Show the prompt that was just written in $EDITOR
         console.print(prompt.rstrip())  # prompt line
         # Show separator
-        console.rule(style="dim")  # separator
-    elif prompt.strip():  # typed on CLI / stdin
-        # Show separator
-        console.rule(style="dim")
+        # console.rule(style="dim")  # separator
+    # elif prompt.strip():  # typed on CLI / stdin
+    # Show separator
+    # console.rule(style="dim")
+
+    for _ in range(3):
+        console.rule(style="red")
 
     role_class = (
         DefaultRoles.check_get(shell, describe_shell, code)
