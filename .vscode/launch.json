@@ -93,8 +93,7 @@
                 "--no-cache",
                 "--token_limit",
                 "10000",
-                //"What are the folders in my tmp folder?"
-                "does that help you tell me how to see if I am running encrypted version?"
+                "What are the folders in my home folder?"
             ]
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]
             //"args": ["--install-functions"]

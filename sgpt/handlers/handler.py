@@ -135,6 +135,11 @@ class Handler:
                             arguments += tool_call.function.arguments
                 if chunk.choices[0].finish_reason == "tool_calls":
                     yield from self.handle_function_call(messages, name, arguments)
+
+                    yield "\n"
+                    for _ in range(3):
+                        yield "---\n"  # markdown horizontal rule; renders nicely
+
                     yield from self.get_completion(
                         model=model,
                         temperature=temperature,
