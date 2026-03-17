@@ -221,10 +221,12 @@ def main(
         console.print(prompt.rstrip())  # prompt line
         # Show separator
         # console.rule(style="dim")  # separator
-    # elif prompt.strip():  # typed on CLI / stdin
-    # Show separator
-    # console.rule(style="dim")
+    elif prompt.strip():  # typed on CLI / stdin
+        pass
+        # Show separator
+        # console.rule(style="dim")
 
+    # Pring 3 red lines to distinguish question from answer.
     for _ in range(3):
         console.rule(style="red")
 
