@@ -109,23 +109,33 @@ class Function(OpenAISchema):
     """Search Gmail messages via Gmail API (OAuth)."""
 
     q: str = Field(..., description="Gmail search query")
-    max_results: int = Field(5, ge=1, le=20, description="Max number of results")
+    max_results: int = Field(5, ge=1, le=200, description="Max number of results (page size)")
+    page_token: str | None = Field(
+        None,
+        description="Optional page token from a previous gmail_search response to fetch the next page.",
+    )
 
     class Config:
         title = "gmail_search"
 
     @classmethod
-    def execute(cls, q: str, max_results: int = 5) -> str:
+    def execute(
+        cls, q: str, max_results: int = 5, page_token: str | None = None
+    ) -> str:
         service = _gmail_service()
 
         # 1) list message IDs
-        resp = (
+        list_req = (
             service.users()
             .messages()
-            .list(userId="me", q=q, maxResults=max(1, min(int(max_results), 20)))
-            .execute()
+            .list(userId="me", q=q, maxResults=max(1, min(int(max_results), 200)))
         )
+        if page_token:
+            list_req = list_req.pageToken(page_token)
+
+        resp = list_req.execute()
         msgs = resp.get("messages", []) or []
+        next_page_token = resp.get("nextPageToken")
 
         results: List[Dict[str, Any]] = []
         for m in msgs:
@@ -158,6 +168,7 @@ class Function(OpenAISchema):
         out = {
             "query": q,
             "result_count": len(results),
+            "nextPageToken": next_page_token,
             "results": results,
         }
         return json.dumps(out, ensure_ascii=False, indent=2)
