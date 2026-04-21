@@ -298,7 +298,17 @@ def main(
 
 
 def entry_point() -> None:
-    typer.run(main)
+    try:
+        typer.run(main)
+    except Exception as e:
+        # Keep console output readable: show only a short error message unless
+        # user explicitly opts into full tracebacks.
+        if os.getenv("SGPT_DEBUG", "").lower() in ("1", "true", "yes", "y"):
+            raise
+        from rich.console import Console
+
+        Console().print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
