@@ -1,8 +1,7 @@
 import pathlib
-from typing import Optional
+from typing import Optional, Any, Dict
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 # ----------------------------------------------------------------------------
 # Configuration
@@ -11,7 +10,7 @@ from pydantic import Field
 SAFE_ROOT = pathlib.Path("/").resolve()
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """
     Reads text from a file.
     """
@@ -28,9 +27,6 @@ class Function(OpenAISchema):
         description="Line number to stop reading at (inclusive, 1-based)",
     )
 
-    class Config:
-        title = "read_file"
-
     # ------------------------------------------------------------------
     # Executor
     # ------------------------------------------------------------------
@@ -41,7 +37,7 @@ class Function(OpenAISchema):
         file_path: str,
         start: int = 1,
         end: Optional[int] = None,
-        _max_chars: int = 10_000,
+        _max_chars: int = 100_000,
     ) -> str:
         """Return text from *start* to *end* lines (inclusive)."""
 
@@ -83,3 +79,20 @@ class Function(OpenAISchema):
 
         except Exception as e:
             return f"Error reading '{file_path}': {e}"
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "read_file",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

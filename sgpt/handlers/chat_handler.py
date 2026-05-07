@@ -6,6 +6,7 @@ import tiktoken
 import typer
 from datetime import datetime
 from click import BadArgumentUsage
+from click import BadParameter, UsageError
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -99,7 +100,7 @@ class ChatSession:
             return 0
         parsed_cache = json.loads(file_path.read_text())
         messages = [
-            message["content"] for message in parsed_cache if "content" in message
+            message["content"] for message in parsed_cache if "content" in message and message["content"] != None
         ]
         text_to_encode = " ".join(messages)
 
@@ -114,7 +115,7 @@ class ChatSession:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             questions_cnt = sum(1 for m in parsed_cache if m.get("role") == "user")
             assistant_cnt = sum(1 for m in parsed_cache if m.get("role") == "assistant")
-            developer_cnt = sum(1 for m in parsed_cache if m.get("role") == "developer")
+            developer_cnt = sum(1 for m in parsed_cache if m.get("role") == "tool")
             log_message = (
                 f"{current_time}: "
                 f"tokens {token_count} "
@@ -185,15 +186,13 @@ class ChatHandler(Handler):
         if self.initiated:
             chat_role_name = self.role.get_role_name(self.initial_message(self.chat_id))
             if not chat_role_name:
-                raise BadArgumentUsage(
-                    f'Could not determine chat role of "{self.chat_id}"'
-                )
+                raise BadParameter(f'Could not determine chat role of "{self.chat_id}"')
             if self.role.name == DefaultRoles.DEFAULT.value:
                 # If user didn't pass chat mode, we will use the one that was used to initiate the chat.
                 self.role = SystemRole.get(chat_role_name)
             else:
                 if not self.is_same_role:
-                    raise BadArgumentUsage(
+                    raise UsageError(
                         f'Cant change chat role to "{self.role.name}" '
                         f'since it was initiated as "{chat_role_name}" chat.'
                     )
