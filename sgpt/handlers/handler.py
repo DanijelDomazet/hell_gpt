@@ -152,8 +152,14 @@ class Handler:
                             )
                         else:
                             tool_call_id = tool_call.id or tool_call_id
-                            name = tool_call.function.name or name
-                            arguments += tool_call.function.arguments or ""
+                            if tool_call.function.name:
+                                name = tool_call.function.name
+                                # Clear arguments if we have a new tool
+                                arguments = ""
+                            # name = tool_call.function.name or name
+                            if tool_call.function.arguments:
+                                arguments += tool_call.function.arguments
+                            #arguments += tool_call.function.arguments or ""
                 if chunk.choices[0].finish_reason == "tool_calls":
                     yield from self.handle_function_call(messages, tool_call_id, name, arguments)
 
