@@ -234,7 +234,8 @@ class ChatHistory:
         cls,
         chat_id: str,
         markdown: bool,
-        qa_pairs: int | None = None,
+        qa_pairs_number: int | None = None,
+        questions_only: bool = False,
     ) -> None:
         """
         Show the chat history grouped as **Question / Answer-block**.
@@ -273,8 +274,8 @@ class ChatHistory:
         total_questions = len(groups)
 
         # optional trimming to last N questions
-        if qa_pairs is not None:
-            groups = groups[-qa_pairs:]
+        if qa_pairs_number is not None:
+            groups = groups[-qa_pairs_number:]
 
         start_no = total_questions - len(groups) + 1
 
@@ -283,6 +284,9 @@ class ChatHistory:
             q_no = start_no + idx
             typer.echo(f"\n────────── [ {q_no} ] ──────────")
             typer.secho(question, fg=color)
+
+            if questions_only:
+                continue   # <--- skip printing answers
 
             answer_text = "\n".join(answer_lines) or "<no answer yet>"
 

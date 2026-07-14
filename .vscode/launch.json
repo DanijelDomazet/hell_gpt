@@ -46,6 +46,21 @@
             //"args": ["--install-functions"]
         },
         {
+            "name": "show qa",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "sgpt/app.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--show-chat",
+                "zo_sgpt",
+                "--qa-number",
+                "10",
+                "--questions-only"
+            ]
+        },
+        {
             "name": "app.py show chats",
             "type": "debugpy",
             "request": "launch",

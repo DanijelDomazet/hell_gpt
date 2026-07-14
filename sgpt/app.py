@@ -118,8 +118,15 @@ def main(
         help="Show all messages from provided chat id.",
         rich_help_panel="Chat Options",
     ),
-    qa: int | None = typer.Option(
-        None, "--qa", help="Show the last N question–answer pairs (None = show all)."
+    qa_number: int | None = typer.Option(
+        None, "--qa-number", help="Show the last N question–answer pairs (None = show all)."
+    ),
+    questions_only: bool = typer.Option(
+        False,
+        "--questions-only",
+        help="List questions only.",
+        rich_help_panel="Chat Options",
+        is_flag=True,
     ),
     list_chats: bool = typer.Option(
         False,
@@ -201,7 +208,7 @@ def main(
         raise typer.Exit()
 
     if show_chat:
-        ChatHistory.show_messages(show_chat, md, qa_pairs=qa)
+        ChatHistory.show_messages(show_chat, md, qa_pairs_number=qa_number, questions_only=questions_only)
         raise typer.Exit()
 
     if sum((shell, describe_shell, code)) > 1:
