@@ -23,7 +23,6 @@ if use_litellm:
 
     completion = litellm.completion
     litellm.suppress_debug_info = True
-    additional_kwargs.pop("api_key")
 else:
     from openai import OpenAI
 
@@ -59,14 +58,22 @@ class Handler:
     def handle_function_call(
         self,
         messages: List[dict[str, Any]],
+        tool_call_id: str,
         name: str,
         arguments: str,
     ) -> Generator[str, None, None]:
+        # Add assistant message with tool call
         messages.append(
             {
                 "role": "assistant",
-                "content": "",
-                "function_call": {"name": name, "arguments": arguments},
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": tool_call_id,
+                        "type": "function",
+                        "function": {"name": name, "arguments": arguments},
+                    }
+                ],
             }
         )
 
@@ -81,10 +88,17 @@ class Handler:
         if cfg.get("SHOW_FUNCTIONS_OUTPUT") == "true":
             yield f"```text\n{result}\n```\n"
 
+        # Initial:
         # messages.append({"role": "function", "content": result, "name": name})
-        messages.append({"role": "developer", "content": result, "name": name})
+        # Replaced by:
+        # messages.append({"role": "developer", "content": result, "name": name})
         # Danijel: replaced to make O3 work with function calls. TODO fix properly.
         # https://github.com/TheR1D/shell_gpt/issues/717
+        # Newest
+        # Add tool response message
+        messages.append(
+            {"role": "tool", "content": result, "tool_call_id": tool_call_id}
+        )
 
     @cache
     def get_completion(
@@ -95,7 +109,7 @@ class Handler:
         messages: List[Dict[str, Any]],
         functions: Optional[List[Dict[str, str]]],
     ) -> Generator[str, None, None]:
-        name = arguments = ""
+        tool_call_id = name = arguments = ""
         is_shell_role = self.role.name == DefaultRoles.SHELL.value
         is_code_role = self.role.name == DefaultRoles.CODE.value
         is_dsc_shell_role = self.role.name == DefaultRoles.DESCRIBE_SHELL.value
@@ -119,6 +133,8 @@ class Handler:
 
         try:
             for chunk in response:
+                if not chunk.choices:
+                    continue
                 delta = chunk.choices[0].delta
 
                 # LiteLLM uses dict instead of Pydantic object like OpenAI does.
@@ -127,14 +143,25 @@ class Handler:
                 )
                 if tool_calls:
                     for tool_call in tool_calls:
-                        if tool_call.function.name:
-                            name = tool_call.function.name
-                            # Clear arguments if we have a new tool
-                            arguments = ""
-                        if tool_call.function.arguments:
-                            arguments += tool_call.function.arguments
+                        if use_litellm:
+                            # TODO: test.
+                            tool_call_id = tool_call.get("id") or tool_call_id
+                            name = tool_call.get("function", {}).get("name") or name
+                            arguments += tool_call.get("function", {}).get(
+                                "arguments", ""
+                            )
+                        else:
+                            tool_call_id = tool_call.id or tool_call_id
+                            if tool_call.function.name:
+                                name = tool_call.function.name
+                                # Clear arguments if we have a new tool
+                                arguments = ""
+                            # name = tool_call.function.name or name
+                            if tool_call.function.arguments:
+                                arguments += tool_call.function.arguments
+                            #arguments += tool_call.function.arguments or ""
                 if chunk.choices[0].finish_reason == "tool_calls":
-                    yield from self.handle_function_call(messages, name, arguments)
+                    yield from self.handle_function_call(messages, tool_call_id, name, arguments)
 
                     yield "\n"
                     for _ in range(3):

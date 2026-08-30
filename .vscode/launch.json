@@ -15,10 +15,12 @@
             "args": [
                 "--chat",
                 "dev2",
+                "--model",
+                "gpt-5.2",
                 "--token_limit",
                 "1000",
-                //"What are the folders in my tmp folder?"
-                "Whats 4+3?"
+                "Check my functions in /home/danijel/git/hell_gpt/sgpt/llm_functions/common_copy/ and read the files"
+                //"Whats 4+3?"
             ]
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]
             //"args": ["--install-functions"]

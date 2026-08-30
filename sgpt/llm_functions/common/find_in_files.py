@@ -1,9 +1,9 @@
 import os, subprocess, shlex
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import Field, BaseModel
+from typing import Any, Dict
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Recursively search files for PATTERN and return matching lines with line numbers."""
 
     pattern: str = Field(..., description="Regex or fixed string to search for")
@@ -25,9 +25,6 @@ class Function(OpenAISchema):
         description="Only search files whose names match these extensions "
         "(e.g. ['py','proto']). Uses grep --include.",
     )
-
-    class Config:
-        title = "find_in_files"
 
     @classmethod
     def execute(
@@ -76,3 +73,22 @@ class Function(OpenAISchema):
 
         stdout, _ = proc.communicate()
         return f"Exit code: {proc.returncode}, Output: {stdout}"
+
+
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "find_in_files",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }
