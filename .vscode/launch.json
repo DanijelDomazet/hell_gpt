@@ -14,9 +14,11 @@
             //"args": ["--chat", "dev2", "--token_limit", "1500", "What are the folders in my home folder"]
             "args": [
                 "--chat",
-                "dev2",
+                "zo_debugchat",
                 "--token_limit",
-                "1000",
+                "100000",
+                "--role",
+                "Yo",
                 //"What are the folders in my tmp folder?"
                 "Whats 4+3?"
             ]

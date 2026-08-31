@@ -81,6 +81,9 @@ class ChatSession:
         json.dump(messages, file_path.open("w"))
 
     def _limit_tokens(self, chat_id, token_limit):
+        # First: prune older tool outputs (developer role) to reduce context size.
+        # Keep tool outputs only for the most recent N user questions.
+        self._prune_old_tool_outputs(chat_id, keep_last_questions=100)
         while True:
             current_token_estimate = self._count_tokens(chat_id)
             if current_token_estimate > token_limit:
@@ -92,6 +95,39 @@ class ChatSession:
                 self._write(truncated_messages, chat_id)
             else:
                 break
+
+    def _prune_old_tool_outputs(self, chat_id: str, keep_last_questions: int = 300) -> None:
+        """Remove tool outputs (role=='developer') for older parts of the chat.
+
+        We keep developer/tool messages only for the last `keep_last_questions`
+        user questions. Older tool output balloons token count and is rarely
+        necessary as model context.
+
+        This does *not* delete user/assistant messages.
+        """
+        messages = self._read(chat_id)
+        if not messages:
+            return
+
+        # Find indices of user messages (questions)
+        user_indices = [i for i, m in enumerate(messages) if m.get("role") == "user"]
+        if len(user_indices) <= keep_last_questions:
+            return
+
+        # Determine cutoff index: keep tool outputs from this point onward
+        cutoff_user_idx = user_indices[-keep_last_questions]
+        cutoff = cutoff_user_idx
+
+        changed = False
+        new_messages = []
+        for i, m in enumerate(messages):
+            if i < cutoff and m.get("role") == "developer":
+                changed = True
+                continue
+            new_messages.append(m)
+
+        if changed:
+            self._write(new_messages, chat_id)
 
     def _count_tokens(self, chat_id: str) -> int:
         file_path = self.storage_path / chat_id
