@@ -1,12 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  cat <<'EOF'
+Usage: backup_chat_cache.sh [--today]
+
+Options:
+  --today   Create/overwrite chat_cache_today.zip (instead of timestamped name)
+EOF
+}
+
 SRC_DIR="/home/dd/GDrive/hellgpt/data/chat_cache"
 DST_DIR="/home/dd/GDrive/hellgpt/data/chat_cache_backup"
 
 # Timestamp like 2026-07-14_082233
 TS="$(date +'%F_%H%M%S')"
+
 ARCHIVE_NAME="chat_cache_${TS}.zip"
+
+# ---- args ----
+MODE="timestamp"
+if [[ "${1-}" == "--today" ]]; then
+  MODE="today"
+  shift
+elif [[ "${1-}" == "-h" || "${1-}" == "--help" ]]; then
+  usage
+  exit 0
+elif [[ "${1-}" != "" ]]; then
+  echo "ERROR: Unknown argument: $1" >&2
+  usage >&2
+  exit 2
+fi
+
+if [[ "$MODE" == "today" ]]; then
+  ARCHIVE_NAME="chat_cache_today.zip"
+fi
+
 TMP_ZIP="${DST_DIR}/.${ARCHIVE_NAME}.tmp"
 FINAL_ZIP="${DST_DIR}/${ARCHIVE_NAME}"
 
