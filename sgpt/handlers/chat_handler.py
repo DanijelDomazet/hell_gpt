@@ -83,7 +83,7 @@ class ChatSession:
     def _limit_tokens(self, chat_id, token_limit):
         # First: prune older tool outputs (developer role) to reduce context size.
         # Keep tool outputs only for the most recent N user questions.
-        self._prune_old_tool_outputs(chat_id, keep_last_questions=100)
+        self._prune_old_tool_outputs(chat_id, keep_last_questions=10)
         while True:
             current_token_estimate = self._count_tokens(chat_id)
             if current_token_estimate > token_limit:
