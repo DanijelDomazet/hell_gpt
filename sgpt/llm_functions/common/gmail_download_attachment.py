@@ -19,10 +19,9 @@ import base64
 import os
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 def _get_paths() -> tuple[Path, Path]:
@@ -101,7 +100,7 @@ def _resolve_out_path(filename: str) -> Path:
     return out
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Download a Gmail attachment to GMAIL_DOWNLOAD_DIR."""
 
     message_id: str = Field(..., description="Gmail message id")
@@ -116,9 +115,6 @@ class Function(OpenAISchema):
         le=100_000_000,
         description="Maximum allowed download size in bytes",
     )
-
-    class Config:
-        title = "gmail_download_attachment"
 
     @classmethod
     def execute(
@@ -198,3 +194,20 @@ class Function(OpenAISchema):
             ensure_ascii=False,
             indent=2,
         )
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "gmail_download_attachment",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

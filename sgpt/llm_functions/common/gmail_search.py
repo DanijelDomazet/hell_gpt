@@ -16,8 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 def _extract_header(headers: List[Dict[str, str]], name: str) -> str:
@@ -112,7 +111,7 @@ def _safe_dt(value: str) -> str:
     return value
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Search Gmail messages via Gmail API (OAuth)."""
 
     q: str = Field(..., description="Gmail search query")
@@ -121,9 +120,6 @@ class Function(OpenAISchema):
         None,
         description="Optional page token from a previous gmail_search response to fetch the next page.",
     )
-
-    class Config:
-        title = "gmail_search"
 
     @classmethod
     def execute(
@@ -179,3 +175,20 @@ class Function(OpenAISchema):
             "results": results,
         }
         return json.dumps(out, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "gmail_search",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

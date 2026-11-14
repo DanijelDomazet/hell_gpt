@@ -1,7 +1,5 @@
 import os
-from typing import Optional, Callable
-
-from instructor import OpenAISchema
+from typing import Any, Callable, Dict, Optional
 from enum import Enum
 from typing import Optional
 
@@ -492,7 +490,7 @@ def remove_file(path: str) -> None:
     os.remove(path)
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """
     Apply a patch to a file.
     """
@@ -501,9 +499,6 @@ class Function(OpenAISchema):
         ...,
         description="Full text of the patch starting with '*** Begin Patch'. The patch contents must be separated by the new lines. Provide absolute paths if possible.",
     )
-
-    class Config:
-        title = "apply_patch"
 
     # --------------------------------------------------------
     # Executor
@@ -518,6 +513,23 @@ class Function(OpenAISchema):
             return f"Patch failed: {e}"
         except Exception as e:
             return f"Error while processing patch: {e}"
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "apply_patch",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }
 
 
 # if __name__ == "__main__":

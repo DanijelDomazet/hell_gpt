@@ -11,16 +11,15 @@ from __future__ import annotations
 
 import pathlib
 import textwrap
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 SAFE_ROOT = pathlib.Path("/home/dd").resolve()
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Generate a PDF from plain text and save it."""
 
     output_pdf_path: str = Field(
@@ -34,9 +33,6 @@ class Function(OpenAISchema):
         le=300,
         description="Wrap line length in characters",
     )
-
-    class Config:
-        title = "generate_pdf"
 
     @classmethod
     def execute(
@@ -149,3 +145,20 @@ class Function(OpenAISchema):
 
         except Exception as e:
             return f"Error generating PDF: {e}"
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "generate_pdf",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

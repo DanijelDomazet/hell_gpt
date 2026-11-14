@@ -16,11 +16,10 @@ from __future__ import annotations
 import re
 import ssl
 import urllib.request
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from bs4 import BeautifulSoup
-from instructor import OpenAISchema
-from pydantic import Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -87,15 +86,12 @@ def _html2text(html: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Downloads a web page and returns its textual content (UTF-8)."""
 
     url: HttpUrl = Field(..., description="Full HTTP/HTTPS URL of the page to download")
     start: Optional[int] = Field(0, ge=0, description="Character offset to start from")
     end: Optional[int] = Field(None, ge=1, description="Character offset to stop at (exclusive)")
-
-    class Config:
-        title = "read_web_page"
 
     @classmethod
     def execute(
@@ -117,3 +113,20 @@ class Function(OpenAISchema):
         if len(slice_) > _max_chars:
             slice_ = slice_[:_max_chars] + f"\n...[truncated; total {len(text)} chars]..."
         return slice_
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "read_web_page",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

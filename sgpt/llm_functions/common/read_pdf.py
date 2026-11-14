@@ -10,10 +10,9 @@ Requirements:
 from __future__ import annotations
 
 import pathlib
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
 # Config – keep the “jail” consistent with read_file.py
@@ -27,7 +26,7 @@ SAFE_ROOT = pathlib.Path("/home").resolve()
 # ---------------------------------------------------------------------------
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Extract text from a PDF between *page_start* and *page_end* (1-based, inclusive)."""
 
     pdf_path: str = Field(
@@ -44,9 +43,6 @@ class Function(OpenAISchema):
         ge=1,
         description="Last page number to extract (inclusive)",
     )
-
-    class Config:
-        title = "read_pdf"
 
     # ------------------------------------------------------------------
     # Executor
@@ -107,3 +103,20 @@ class Function(OpenAISchema):
 
         except Exception as e:
             return f"Error reading PDF '{pdf_path}': {e}"
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "read_pdf",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

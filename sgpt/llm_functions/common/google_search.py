@@ -17,14 +17,13 @@ Dependencies:
 from __future__ import annotations
 
 import os
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import serpapi
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Search Google via SerpApi and return up to `num_results` result links."""
 
     query: str = Field(..., description="Search query")
@@ -58,9 +57,6 @@ class Function(OpenAISchema):
         default=False,
         description="If true, include title/snippet per result (still returns text).",
     )
-
-    class Config:
-        title = "google_search"
 
     @classmethod
     def execute(
@@ -129,3 +125,20 @@ class Function(OpenAISchema):
                 lines.append(f"{i}. {link}")
 
         return "\n".join(lines) if lines else "No links found in organic_results."
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "google_search",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

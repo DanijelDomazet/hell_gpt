@@ -15,13 +15,12 @@ import io
 import os
 import shutil
 import textwrap
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Analyse a chess move using PGN format with Stockfish chess engine and return evaluation & PV."""
 
     pgn: str = Field(..., description="Full PGN text")
@@ -36,9 +35,6 @@ class Function(OpenAISchema):
         le=99,
         description="Search depth used when calling Stockfish.",
     )
-
-    class Config:
-        title = "analyze_pgn_stockfish"
 
     @classmethod
     def execute(cls, *, pgn: str, ply: Optional[int] = None, depth: int = 18) -> str:  # type: ignore[override]
@@ -95,3 +91,20 @@ class Function(OpenAISchema):
             FEN   : {board.fen()}
             """
         ).strip()
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "analyze_pgn_stockfish",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }

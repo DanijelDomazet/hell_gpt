@@ -14,8 +14,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-from instructor import OpenAISchema
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 def _get_paths() -> tuple[Path, Path]:
@@ -83,13 +82,10 @@ def _walk_parts(part: Dict[str, Any]) -> List[Dict[str, Any]]:
     return out
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """List attachments for a given Gmail message id."""
 
     message_id: str = Field(..., description="Gmail message id")
-
-    class Config:
-        title = "gmail_list_attachments"
 
     @classmethod
     def execute(cls, message_id: str) -> str:
@@ -113,3 +109,20 @@ class Function(OpenAISchema):
             ensure_ascii=False,
             indent=2,
         )
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "gmail_list_attachments",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }
