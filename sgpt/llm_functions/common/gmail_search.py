@@ -56,6 +56,7 @@ def _gmail_service():
     # Lazy imports so SGPT still works if deps are missing.
     from google.auth.transport.requests import Request  # type: ignore
     from google.oauth2.credentials import Credentials  # type: ignore
+    from google.auth.exceptions import RefreshError  # type: ignore
     from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
     from googleapiclient.discovery import build  # type: ignore
 
@@ -78,11 +79,17 @@ def _gmail_service():
     if token_file.exists():
         creds = Credentials.from_authorized_user_file(str(token_file), scopes)
 
+    # If the cached token is expired, try refresh. If Google rejects it (invalid_grant),
+    # fall back to interactive re-auth to self-heal.
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            # This will open a browser on first run.
+        try:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                raise RefreshError("No valid cached credentials")
+        except RefreshError:
+            # This will open a browser. If you're on a headless box, you may want
+            # to swap to flow.run_console().
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(client_secret_file), scopes
             )

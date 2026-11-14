@@ -38,6 +38,7 @@ def _get_paths() -> tuple[Path, Path]:
 def _gmail_service():
     from google.auth.transport.requests import Request  # type: ignore
     from google.oauth2.credentials import Credentials  # type: ignore
+    from google.auth.exceptions import RefreshError  # type: ignore
     from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
     from googleapiclient.discovery import build  # type: ignore
 
@@ -57,10 +58,15 @@ def _gmail_service():
         creds = Credentials.from_authorized_user_file(str(token_file), scopes)
 
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(str(client_secret_file), scopes)
+        try:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                raise RefreshError("No valid cached credentials")
+        except RefreshError:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                str(client_secret_file), scopes
+            )
             creds = flow.run_local_server(port=0)
         token_file.parent.mkdir(parents=True, exist_ok=True)
         token_file.write_text(creds.to_json())
@@ -139,13 +145,30 @@ class Function(OpenAISchema):
                 indent=2,
             )
 
-        att = (
-            service.users()
-            .messages()
-            .attachments()
-            .get(userId="me", messageId=message_id, id=attachment_id)
-            .execute()
-        )
+        # Gmail returns 400 "Invalid attachment token" if attachment_id is wrong/truncated
+        # or doesn't belong to the message_id. Return a compact error instead of crashing.
+        try:
+            from googleapiclient.errors import HttpError  # type: ignore
+
+            att = (
+                service.users()
+                .messages()
+                .attachments()
+                .get(userId="me", messageId=message_id, id=attachment_id)
+                .execute()
+            )
+        except HttpError as e:
+            return json.dumps(
+                {
+                    "ok": False,
+                    "error": str(e),
+                    "message_id": message_id,
+                    "attachment_id": attachment_id,
+                    "hint": "Attachment id must come from gmail_list_attachments for the same message and must not be truncated.",
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
 
         data = att.get("data")
         if not data:

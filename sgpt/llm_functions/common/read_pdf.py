@@ -19,7 +19,7 @@ from pydantic import Field
 # Config – keep the “jail” consistent with read_file.py
 # ---------------------------------------------------------------------------
 
-SAFE_ROOT = pathlib.Path("/home/dd").resolve()
+SAFE_ROOT = pathlib.Path("/home").resolve()
 
 
 # ---------------------------------------------------------------------------
