@@ -1,33 +1,31 @@
-import os, subprocess, shlex
-from instructor import OpenAISchema
-from pydantic import Field
+import os
+import shlex
+import subprocess
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
-class Function(OpenAISchema):
+class Function(BaseModel):
     """Recursively search files for PATTERN and return matching lines with line numbers."""
 
     pattern: str = Field(..., description="Regex or fixed string to search for")
-    directory: str = Field(
-        default=".", description="Directory to recursively search in"
-    )
-    max_hits: int | None = Field(
+    directory: str = Field(default=".", description="Directory to recursively search in")
+    max_hits: Optional[int] = Field(
         default=None,
         ge=1,
         description="Return at most this many matching lines (across all files)",
     )
-    exclude_dirs: list[str] | None = Field(
+    exclude_dirs: Optional[List[str]] = Field(
         default=None,
         description="Directories to skip (passed to grep as --exclude-dir). "
         "Accepts absolute paths or globs, e.g. ['.git','node_modules']",
     )
-    file_extensions: list[str] | None = Field(
+    file_extensions: Optional[List[str]] = Field(
         default=None,
         description="Only search files whose names match these extensions "
         "(e.g. ['py','proto']). Uses grep --include.",
     )
-
-    class Config:
-        title = "find_in_files"
 
     @classmethod
     def execute(
@@ -35,13 +33,13 @@ class Function(OpenAISchema):
         *,
         pattern: str,
         directory: str = ".",
-        max_hits: int | None = None,
-        exclude_dirs: list[str] | None = None,
-        file_extensions: list[str] | None = None,
+        max_hits: Optional[int] = None,
+        exclude_dirs: Optional[List[str]] = None,
+        file_extensions: Optional[List[str]] = None,
     ) -> str:
         directory = os.path.expandvars(os.path.expanduser(directory))
 
-        base_cmd: list[str] = ["grep", "-R", "-n", "--color=never"]
+        base_cmd: List[str] = ["grep", "-R", "-n", "--color=never"]
 
         # append exclusions
         if exclude_dirs:
@@ -76,3 +74,20 @@ class Function(OpenAISchema):
 
         stdout, _ = proc.communicate()
         return f"Exit code: {proc.returncode}, Output: {stdout}"
+
+    @classmethod
+    def openai_schema(cls) -> Dict[str, Any]:
+        """Generate OpenAI function schema from Pydantic model."""
+        schema = cls.model_json_schema()
+        return {
+            "type": "function",
+            "function": {
+                "name": "find_in_files",
+                "description": cls.__doc__.strip() if cls.__doc__ else "",
+                "parameters": {
+                    "type": "object",
+                    "properties": schema.get("properties", {}),
+                    "required": schema.get("required", []),
+                },
+            },
+        }
