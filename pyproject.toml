@@ -31,6 +31,10 @@ dependencies = [
     "distro >= 1.8.0, < 2.0.0",
     'pyreadline3 >= 3.4.1, < 4.0.0; sys_platform == "win32"',
     "prompt_toolkit >= 3.0.51",
+    # Tool/function dependencies used by bundled llm_functions/common
+    "tiktoken",
+    "beautifulsoup4",
+    "serpapi",
 ]
 
 [project.optional-dependencies]
