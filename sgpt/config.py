@@ -1,19 +1,26 @@
 import os
 from getpass import getpass
 from pathlib import Path
-from tempfile import gettempdir
 from typing import Any
 
 from click import UsageError
 
-CONFIG_FOLDER = os.path.expanduser("~/.config")
-SHELL_GPT_CONFIG_FOLDER = Path(CONFIG_FOLDER) / "shell_gpt"
+HELL_GPT_DATA = os.getenv("HELL_GPT_DATA")
+if not HELL_GPT_DATA:
+    raise UsageError(
+        "Missing env var HELL_GPT_DATA. Example: export HELL_GPT_DATA=~/GoogleDriveDanijel/hellgpt/data"
+    )
+
+SHELL_GPT_CONFIG_FOLDER = Path(HELL_GPT_DATA).expanduser().resolve()
+if not SHELL_GPT_CONFIG_FOLDER.exists():
+    raise UsageError(
+        f"HELL_GPT_DATA points to non-existent directory: {SHELL_GPT_CONFIG_FOLDER}"
+    )
+
 SHELL_GPT_CONFIG_PATH = SHELL_GPT_CONFIG_FOLDER / ".sgptrc"
 ROLE_STORAGE_PATH = SHELL_GPT_CONFIG_FOLDER / "roles"
 FUNCTIONS_PATH = SHELL_GPT_CONFIG_FOLDER / "functions"
-# CHAT_CACHE_PATH = Path(gettempdir()) / "chat_cache"
 CHAT_CACHE_PATH = SHELL_GPT_CONFIG_FOLDER / "chat_cache"
-# CACHE_PATH = Path(gettempdir()) / "cache"
 CACHE_PATH = SHELL_GPT_CONFIG_FOLDER / "cache"
 
 # TODO: Refactor ENV variables with SGPT_ prefix.
