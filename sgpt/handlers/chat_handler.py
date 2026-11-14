@@ -99,7 +99,9 @@ class ChatSession:
             return 0
         parsed_cache = json.loads(file_path.read_text())
         messages = [
-            message["content"] for message in parsed_cache if "content" in message
+            m.get("content")
+            for m in parsed_cache
+            if isinstance(m.get("content"), str) and m.get("content")
         ]
         text_to_encode = " ".join(messages)
 
@@ -114,13 +116,14 @@ class ChatSession:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             questions_cnt = sum(1 for m in parsed_cache if m.get("role") == "user")
             assistant_cnt = sum(1 for m in parsed_cache if m.get("role") == "assistant")
-            developer_cnt = sum(1 for m in parsed_cache if m.get("role") == "developer")
+            # developer_cnt = sum(1 for m in parsed_cache if m.get("role") == "developer")
+            tools_cnt = sum(1 for m in parsed_cache if m.get("role") in ("tool", "developer"))
             log_message = (
                 f"{current_time}: "
                 f"tokens {token_count} "
                 f"questions {questions_cnt} | "
                 f"answers {assistant_cnt} "
-                f"tools {developer_cnt} "
+                f"tools {tools_cnt} "
                 f"total {len(messages)} "
                 "\n"
             )
