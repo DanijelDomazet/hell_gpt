@@ -96,7 +96,7 @@ class ChatSession:
             else:
                 break
 
-    def _prune_old_tool_outputs(self, chat_id: str, keep_last_questions: int = 300) -> None:
+    def _prune_old_tool_outputs(self, chat_id: str, keep_last_questions: int = 30) -> None:
         """Remove tool outputs (role=='developer') for older parts of the chat.
 
         We keep developer/tool messages only for the last `keep_last_questions`
@@ -121,7 +121,7 @@ class ChatSession:
         changed = False
         new_messages = []
         for i, m in enumerate(messages):
-            if i < cutoff and m.get("role") == "developer":
+            if i < cutoff and m.get("role") in ("tool", "developer"):
                 changed = True
                 continue
             new_messages.append(m)
