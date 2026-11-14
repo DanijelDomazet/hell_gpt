@@ -10,9 +10,9 @@ Install editable:
 > pip install -e /home/joedoe/git/hell_gpt
 
 Check:
-> which sgpt
+> which hgpt
 
-> sgpt --version
+> hgpt --version
 
 
 # .bashrc
