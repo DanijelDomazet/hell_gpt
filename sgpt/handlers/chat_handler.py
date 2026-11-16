@@ -97,12 +97,16 @@ class ChatSession:
             else:
                 break
 
-    def _prune_old_tool_outputs(self, chat_id: str, keep_last_questions: int = 30) -> None:
-        """Remove tool outputs (role=='developer') for older parts of the chat.
+    def _prune_old_tool_outputs(self, chat_id: str, keep_last_questions: int = 30, max_tool_chars: int = 1200) -> None:
+        """Reduce size of older tool outputs without breaking tool-call protocol.
 
-        We keep developer/tool messages only for the last `keep_last_questions`
-        user questions. Older tool output balloons token count and is rarely
-        necessary as model context.
+        IMPORTANT:
+          If we delete a tool message that answers an assistant `tool_calls`, the
+          OpenAI API will reject the conversation history.
+
+        Strategy:
+          - Keep the tool message (including `tool_call_id`) to satisfy protocol.
+          - Truncate its `content` for older parts of the chat.
 
         This does *not* delete user/assistant messages.
         """
@@ -123,7 +127,18 @@ class ChatSession:
         new_messages = []
         for i, m in enumerate(messages):
             if i < cutoff and m.get("role") in ("tool", "developer"):
-                changed = True
+                # Keep the message, but truncate content to control token growth.
+                if isinstance(m.get("content"), str) and len(m["content"]) > max_tool_chars:
+                    mm = dict(m)
+                    mm["content"] = (
+                        mm["content"][:max_tool_chars]
+                        + f"\n\n[truncated tool output: kept first {max_tool_chars} chars]\n"
+                    )
+                    new_messages.append(mm)
+                    changed = True
+                    continue
+                # content already small or non-string
+                new_messages.append(m)
                 continue
             new_messages.append(m)
 
