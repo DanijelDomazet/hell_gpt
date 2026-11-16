@@ -14,16 +14,18 @@
             //"args": ["--chat", "dev2", "--token_limit", "1500", "What are the folders in my home folder"]
             "args": [
                 "--chat",
-                "zo_debugchat",
+                "zo_debugchat6",
                 "--token_limit",
                 "100000",
                 "--role",
                 "Yo",
                 //"What are the folders in my tmp folder?"
-                //"can you please search my gmail for messages from interactive brokers?"
-                "can you please search croatian news portals for 3 most important news today and let me know shortly whats going on?"
+                "can you please search 2 most popular news portals in croatia and tell me 3 news that is most popular at this moment?"
+                //"can you please visit www.index.hr and tell me the most important news today?"
+                // "count me files in my /home/dd/spaces folder. list them. which one is largest?"
+                // "count me files in my /home/dd/spaces folder."
             ],
-            "env": { "OPENAI_FUNCTIONS_PATH": "/home/danijel/git/hell_gpt/sgpt/llm_functions/common" }
+            //"env": { "OPENAI_FUNCTIONS_PATH": "/home/danijel/git/hell_gpt/sgpt/llm_functions/common" }
             //"args": ["--chat", "dev2", "What are the planets in solar system?"]
             //"args": ["--install-functions"]
         },
