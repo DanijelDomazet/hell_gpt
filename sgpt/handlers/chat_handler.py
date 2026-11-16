@@ -77,8 +77,9 @@ class ChatSession:
 
     def _write(self, messages: List[Dict[str, str]], chat_id: str) -> None:
         file_path = self.storage_path / chat_id
-
-        json.dump(messages, file_path.open("w"))
+        # NOTE: messages may include tool calls/responses; write atomically-ish.
+        with file_path.open("w") as f:
+            json.dump(messages, f)
 
     def _limit_tokens(self, chat_id, token_limit):
         # First: prune older tool outputs (developer role) to reduce context size.
