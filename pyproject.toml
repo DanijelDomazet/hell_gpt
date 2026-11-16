@@ -36,6 +36,9 @@ dependencies = [
     "tiktoken",
     "beautifulsoup4",
     "serpapi",
+    "google-api-python-client",
+    "google_auth_oauthlib",
+    "pypdf"
 ]
 
 [project.optional-dependencies]
