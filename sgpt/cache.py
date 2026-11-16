@@ -30,7 +30,8 @@ class Cache:
         def wrapper(*args: Any, **kwargs: Any) -> Generator[str, None, None]:
             key = md5(json.dumps((args[1:], kwargs)).encode("utf-8")).hexdigest()
             file = self.cache_path / key
-            if kwargs.pop("caching") and file.exists():
+            # Be tolerant: if caller didn't pass caching, default to True.
+            if kwargs.pop("caching", True) and file.exists():
                 yield file.read_text()
                 return
             result = ""

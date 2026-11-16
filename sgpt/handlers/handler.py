@@ -110,8 +110,13 @@ class Handler:
         top_p: float,
         messages: List[Dict[str, Any]],
         functions: Optional[List[Dict[str, str]]],
+        caching: bool = True,
+        tool_rounds_left: int = 20,
     ) -> Generator[str, None, None]:
-        tool_call_id = name = arguments = ""
+        # Track tool calls by index first.
+        # OpenAI streaming often sends tool call argument chunks with only `index`
+        # (id/name missing), and later provides id/name. Index is the stable key.
+        tool_calls_by_index: dict[int, dict[str, str]] = {}
         is_shell_role = self.role.name == DefaultRoles.SHELL.value
         is_code_role = self.role.name == DefaultRoles.CODE.value
         is_dsc_shell_role = self.role.name == DefaultRoles.DESCRIBE_SHELL.value
@@ -139,6 +144,8 @@ class Handler:
                     continue
                 delta = chunk.choices[0].delta
 
+                # Debug output: keep it minimal (only print at execution time).
+
                 # LiteLLM uses dict instead of Pydantic object like OpenAI does.
                 tool_calls = (
                     delta.get("tool_calls") if use_litellm else delta.tool_calls
@@ -146,32 +153,103 @@ class Handler:
                 if tool_calls:
                     for tool_call in tool_calls:
                         if use_litellm:
-                            # TODO: test.
-                            tool_call_id = tool_call.get("id") or tool_call_id
-                            name = tool_call.get("function", {}).get("name") or name
-                            arguments += tool_call.get("function", {}).get(
-                                "arguments", ""
-                            )
+                            # LiteLLM returns dict-like deltas.
+                            tc_id = tool_call.get("id")
+                            tc_index = tool_call.get("index")
+                            fn = tool_call.get("function", {}) or {}
+                            fn_name = fn.get("name")
+                            fn_args_chunk = fn.get("arguments", "") or ""
                         else:
-                            tool_call_id = tool_call.id or tool_call_id
-                            name = tool_call.function.name or name
-                            arguments += tool_call.function.arguments or ""
+                            # OpenAI streams tool calls in small pieces.
+                            # In early chunks you may only get:
+                            #   - tool_call.index
+                            #   - function.arguments (partial JSON/text)
+                            # and id/name often arrive later.
+                            # That's why we key on index first.
+                            tc_id = tool_call.id
+                            tc_index = getattr(tool_call, "index", None)
+                            fn_name = None
+                            fn_args_chunk = ""
+                            if getattr(tool_call, "function", None) is not None:
+                                fn_name = getattr(tool_call.function, "name", None)
+                                fn_args_chunk = getattr(tool_call.function, "arguments", None) or ""
+
+                        if tc_index is None:
+                            # No index -> we cannot correlate chunks -> ignore.
+                            continue
+
+                        # Accumulate state for this tool call index.
+                        # State fields are filled as they become available.
+                        state = tool_calls_by_index.setdefault(int(tc_index), {"id": "", "name": "", "arguments": ""})
+                        if tc_id:
+                            # Adopt the final tool_call_id once provided by the model.
+                            state["id"] = tc_id
+                        if fn_name:
+                            # Adopt the tool/function name once provided.
+                            state["name"] = fn_name
+                        if fn_args_chunk:
+                            # Append partial argument chunks.
+                            # The model streams JSON args as plain text pieces.
+                            state["arguments"] += fn_args_chunk
+
                 if chunk.choices[0].finish_reason == "tool_calls":
-                    yield from self.handle_function_call(
-                        messages, tool_call_id, name, arguments
-                    )
+                    if tool_rounds_left <= 0:
+                        yield "\nERROR: reached max tool rounds (20). Stopping.\n\n"
+                        return
+
+                    # Ensure we start clean for execution. If a previous round left any
+                    # partial state around, nuke it.
+                    # (Shouldn't happen, but makes the function more robust.)
+                    # NOTE: we clear again after executing tool calls.
+
+                    # The assistant has finished emitting tool calls.
+                    # Now we must execute tools and append a `role="tool"` message for each one.
+                    # OpenAI API requirement:
+                    #   - An assistant message with `tool_calls` MUST be followed by tool messages
+                    #     responding to EACH `tool_call_id`.
+                    # Strategy:
+                    #   - Execute in stable index order (0,1,2,...)
+                    #   - Always respond using the *real* tool_call_id when present.
+                    for idx, state in sorted(tool_calls_by_index.items()):
+                        tc_id = state.get("id")
+                        name = state.get("name")
+                        arguments = state.get("arguments", "")
+                        if not tc_id or not name:
+                            # If the model emitted an incomplete tool call, don't recurse forever.
+                            # Stop here so the user sees something is wrong.
+                            yield "\nERROR: incomplete tool call (missing id or name).\n\n"
+                            tool_calls_by_index.clear()
+                            return
+                        if not arguments.strip():
+                            yield f"\nERROR: tool call '{name}' has empty arguments.\n\n"
+                            tool_calls_by_index.clear()
+                            return
+                        args_preview = arguments.replace("\n", "\\n")
+                        if len(args_preview) > 400:
+                            args_preview = args_preview[:400] + "..."
+                        yield from self.handle_function_call(
+                            messages,
+                            tc_id,
+                            name,
+                            arguments,
+                        )
 
                     yield "\n"
                     for _ in range(3):
                         yield "---\n"  # markdown horizontal rule; renders nicely
 
+                    tool_calls_by_index.clear()
+
+                    # Re-enter the model with tool outputs appended to `messages`.
+                    # This allows the assistant to continue from where it left off.
                     yield from self.get_completion(
                         model=model,
                         temperature=temperature,
                         top_p=top_p,
                         messages=messages,
                         functions=functions,
-                        caching=False,
+                        caching=caching,
+                        tool_rounds_left=tool_rounds_left - 1,
                     )
                     return
 
