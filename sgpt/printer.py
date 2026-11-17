@@ -47,6 +47,7 @@ class MarkdownPrinter(Printer):
             console=self.console,
             vertical_overflow=self.vertical_overflow,
             auto_refresh=False,
+            screen=False
         ) as live:
             last_refresh = time.monotonic()
             for chunk in chunks:
