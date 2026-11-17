@@ -1,4 +1,5 @@
 import json
+import inspect
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Optional, cast
 
@@ -90,7 +91,16 @@ class Handler:
         joined_args = ", ".join(f'{k}="{v}"' for k, v in dict_args.items())
         yield f"> @FunctionCall `{name}({joined_args})` \n\n"
 
-        result = get_function(name)(**dict_args)
+        # Be defensive: models sometimes hallucinate extra kwargs (e.g. a key named ":").
+        # Passing unknown kwargs would crash the whole run.
+        fn = get_function(name)
+        sig = inspect.signature(fn)
+        # Take only params which are in the func signature:
+        allowed_param_names = set()
+        for param_name in sig.parameters:
+            allowed_param_names.add(param_name)
+        safe_args = {k: v for k, v in dict_args.items() if k in allowed_param_names}
+        result = fn(**safe_args)
         if cfg.get("SHOW_FUNCTIONS_OUTPUT") == "true":
             yield f"```text\n{result}\n```\n"
 
