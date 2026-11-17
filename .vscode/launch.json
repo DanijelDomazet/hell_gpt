@@ -20,9 +20,9 @@
                 "--role",
                 "Yo",
                 //"What are the folders in my tmp folder?"
-                "can you please search 2 most popular news portals in croatia and tell me 3 news that is most popular at this moment?"
+                //"can you please search 2 most popular news portals in croatia and tell me 3 news that is most popular at this moment?"
                 //"can you please visit www.index.hr and tell me the most important news today?"
-                // "count me files in my /home/dd/spaces folder. list them. which one is largest?"
+                "count me files in my /home/dd/spaces folder. list them. which one is largest?"
                 // "count me files in my /home/dd/spaces folder."
             ],
             //"env": { "OPENAI_FUNCTIONS_PATH": "/home/danijel/git/hell_gpt/sgpt/llm_functions/common" }
